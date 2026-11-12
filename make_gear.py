@@ -16,6 +16,9 @@ Examples
   # a dataset: 40 gears mixed across conditions
   python make_gear.py batch --count 40 --out dataset --mix perfect=1,manufacturing=1,in_use=1,combined=1
 
+  # the same dataset as USD for Omniverse / Isaac Sim Replicator (per-defect meshes + labels)
+  python make_gear.py batch --count 40 --out dataset --usd
+
   # list the defect catalog
   python make_gear.py list
 """
@@ -45,7 +48,8 @@ def cmd_one(a):
                               severity_range=parse_range(a.severity_range),
                               weights_override=only_override(a.only))
     name = a.name or f"gear_m{spec.module:g}_z{spec.teeth}_{label['condition']}_s{a.seed}"
-    label = export(solid, label, Path(a.out), name, stl=a.stl)
+    label = export(solid, label, Path(a.out), name, stl=a.stl, usd=a.usd, spec=spec,
+                   usd_physics=a.usd_physics, usd_max_error=a.usd_max_error)
     print_summary(label, Path(a.out))
 
 
@@ -91,7 +95,8 @@ def cmd_batch(a):
         except Exception as e:  # never abort a long batch on one bad sample
             print(f"{name}: FAILED {e}", file=sys.stderr)
             continue
-        label = export(solid, label, out, name, stl=a.stl)
+        label = export(solid, label, out, name, stl=a.stl, usd=a.usd, spec=spec,
+                       usd_physics=a.usd_physics, usd_max_error=a.usd_max_error)
         print_summary(label, out)
         rows.append(dict(
             name=name, condition=label["condition"], seed=seed, teeth=spec.teeth,

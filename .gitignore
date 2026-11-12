@@ -17,6 +17,13 @@ venv/
 .idea/
 
 # Generated output (rebuild with make_gear.sh / make_plate.sh)
+out/
+tmp/
+dataset/
+*.usd
+*.usda
+*.usdc
+*.stl
 examples/
 plate_*/
 *.step

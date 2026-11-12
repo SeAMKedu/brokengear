@@ -16,6 +16,8 @@ is fixed for the whole plate; one you leave out varies per gear. Example: fixed
 45 mm / 24-tooth gears, in-use damage only, severity stepping 0.2 -> 1.0:
 
   ./make_plate.sh --od 45 --teeth 24 --bore 8 --condition in_use --perfect 1 --severity-range 0.2,1.0 --out plate_in_use
+
+Add --usd for gears/<ID>.usd and a plate.usd that places them (Omniverse / Isaac Sim).
 """
 
 from __future__ import annotations
@@ -33,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build123d as bd  # noqa: E402
 
 from brokengear.build import build_gear, plan_only  # noqa: E402
+from brokengear.usd import export_plate_usd, export_usd  # noqa: E402
 from brokengear.cli import add_gear_args, only_override, parse_defect, parse_range, spec_kwargs  # noqa: E402
 from brokengear.defects import CATALOG  # noqa: E402
 from brokengear.gear import GearSpec  # noqa: E402
@@ -221,7 +224,7 @@ def main(argv=None):
 
     out = Path(a.out)
     (out / "gears").mkdir(parents=True, exist_ok=True)
-    rows, placed, labels = [], [], []
+    rows, placed, labels, usd_gears = [], [], [], []
     width = max(2, len(str(n)))
     for i, (x, y) in enumerate(slots):
         spec, cond, seed = chosen[i]
@@ -238,7 +241,18 @@ def main(argv=None):
             bd.export_stl(solid, str(out / "gears" / f"{gid}.stl"), tolerance=0.01, angular_tolerance=0.1)
         label = dict(id=gid, plate_position_mm=[round(x, 2), round(y, 2)], seed=seed, **{
             k: v for k, v in label.items() if k != "seed"})
+        if a.usd:
+            label["files"] = dict(step=f"{gid}.step", usd=f"{gid}.usd")
         (out / "gears" / f"{gid}.json").write_text(json.dumps(label, indent=2), encoding="utf-8")
+        if a.usd:
+            # twins without the ID engraving: perfect (finds defects) and this gear (finds the marking)
+            perfect = build_gear(spec, "perfect", seed)[0]
+            unmarked = perfect if cond == "perfect" else build_gear(
+                spec, cond, seed, severity=slot_sev[i], weights_override=override,
+                severity_range=sev_range, defects=defects)[0]
+            export_usd(out / "gears" / f"{gid}.usd", solid, label, spec, perfect=perfect,
+                       unmarked=unmarked, physics=a.usd_physics, max_err=a.usd_max_error)
+            usd_gears.append((gid, f"./gears/{gid}.usd", (x, y)))
         moved = bd.Pos(x, y, 0) * solid
         moved.label = gid
         placed.append(moved)
@@ -264,6 +278,8 @@ def main(argv=None):
     for s in placed:
         mesher.add_shape(s, linear_deflection=0.01, angular_deflection=0.15, part_number=s.label)
     mesher.write(str(out / "plate.3mf"))
+    if a.usd:
+        export_plate_usd(out / "plate.usd", usd_gears)
 
     with open(out / "catalog.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
@@ -282,7 +298,8 @@ def main(argv=None):
     missing = sorted(allowed - covered) if not defects else []
     print(f"\n{n} gears, {len(covered)} defect types on the plate"
           + (f"; allowed but not on this plate: {', '.join(missing)}" if missing else ""))
-    print(f"-> {out}/plate.3mf, plate.step, plate_map.svg, catalog.md, catalog.csv, gears/")
+    print(f"-> {out}/plate.3mf, plate.step, " + ("plate.usd, " if a.usd else "")
+          + "plate_map.svg, catalog.md, catalog.csv, gears/")
 
 
 def _describe(d):

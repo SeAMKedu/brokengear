@@ -346,7 +346,8 @@ def make_label(ctx, plan, condition, seed):
     )
 
 
-def export(solid, label, out_dir: Path, name: str, stl=False):
+def export(solid, label, out_dir: Path, name: str, stl=False, usd=False, spec=None, usd_physics=True,
+           usd_max_error=0.01):
     out_dir.mkdir(parents=True, exist_ok=True)
     solid.label = name
     step_path = out_dir / f"{name}.step"
@@ -356,6 +357,12 @@ def export(solid, label, out_dir: Path, name: str, stl=False):
         stl_path = out_dir / f"{name}.stl"
         bd.export_stl(solid, str(stl_path), tolerance=0.01, angular_tolerance=0.1)
         files["stl"] = stl_path.name
+    if usd:
+        files["usd"] = f"{name}.usd"
     label = dict(name=name, files=files, **label)
+    if usd:
+        from .usd import export_usd
+        export_usd(out_dir / files["usd"], solid, label, spec, physics=usd_physics,
+                   max_err=usd_max_error)
     (out_dir / f"{name}.json").write_text(json.dumps(label, indent=2), encoding="utf-8")
     return label

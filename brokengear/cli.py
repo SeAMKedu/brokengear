@@ -107,6 +107,12 @@ def add_gear_args(p: argparse.ArgumentParser, plate: bool = False):
     o = p.add_argument_group("output")
     o.add_argument("--out", default="plate_h2d" if plate else "out", help="output folder")
     o.add_argument("--stl", action="store_true", help="also write STL")
+    o.add_argument("--usd", action="store_true",
+                   help="also write USD for Omniverse / Isaac Sim, with per-defect meshes and semantic labels")
+    o.add_argument("--usd-max-error", type=float, default=0.01, metavar="MM",
+                   help="decimate the USD meshes as long as no point moves more than this (0 = off)")
+    o.add_argument("--usd-no-physics", dest="usd_physics", action="store_false",
+                   help="leave out the rigid-body / collision schemas in the USD")
 
 
 def spec_kwargs(a) -> dict:
