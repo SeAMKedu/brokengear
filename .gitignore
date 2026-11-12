@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Local env / secrets
+.env
+.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Generated output (rebuild with make_gear.sh / make_plate.sh)
+examples/
+plate_*/
+*.step
+*.3mf
