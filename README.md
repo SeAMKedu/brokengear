@@ -245,3 +245,7 @@ Plate-specific options:
 | `--seed` | Makes the plate reproducible |
 
 The catalog and map also show each gear's severity.
+
+## License
+
+MIT. Copyright (c) 2026 SEAMK. See [LICENSE](LICENSE).
